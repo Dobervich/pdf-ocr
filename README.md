@@ -4,9 +4,10 @@ Scan directories for PDFs and add OCR text layer to scanned documents.
 
 ## Features
 
-- Recursively scans directories for PDF files
+- Process single PDF files or entire directories
 - Smart detection of PDFs needing OCR (checks for pages without text)
 - Creates searchable `_ocr.pdf` files alongside originals
+- Python API for programmatic use from other tools
 - Progress bars for scanning, analyzing, and processing
 - Dry-run mode to preview changes before processing
 
@@ -47,7 +48,12 @@ pip install .
 
 ## Usage
 
+### Command Line
+
 ```bash
+# Process a single PDF file
+pdf-ocr document.pdf
+
 # Scan a directory and OCR any PDFs that need it
 pdf-ocr "C:\Documents\Scanned"
 
@@ -55,13 +61,37 @@ pdf-ocr "C:\Documents\Scanned"
 pdf-ocr "C:\Documents\Scanned" --dry-run
 
 # Force reprocess even if _ocr.pdf already exists
-pdf-ocr "C:\Documents\Scanned" --force
+pdf-ocr document.pdf --force
 
 # Use a different output suffix
-pdf-ocr "C:\Documents\Scanned" --suffix "_searchable"
+pdf-ocr document.pdf --suffix "_searchable"
 
 # Specify OCR language (default: eng)
-pdf-ocr "C:\Documents\Scanned" --language "eng+fra"
+pdf-ocr document.pdf --language "eng+fra"
+```
+
+### Python API
+
+```python
+from pdf_ocr import ocr_file, needs_ocr
+
+# Check if a PDF needs OCR
+if needs_ocr("document.pdf"):
+    print("This PDF needs OCR")
+
+# Process a single file
+result = ocr_file("document.pdf")
+if result.success:
+    print(f"Created: {result.output_path}")
+
+# With custom output path
+result = ocr_file("input.pdf", output_path="output.pdf")
+
+# Force reprocess
+result = ocr_file("document.pdf", force=True)
+
+# Specify language
+result = ocr_file("document.pdf", language="eng+fra")
 ```
 
 ## Options

@@ -7,16 +7,57 @@ from pathlib import Path
 from tqdm import tqdm
 
 from .analyzer import analyze_directory, scan_directory, needs_ocr
-from .processor import process_batch, get_output_path
+from .processor import process_batch, process_pdf, get_output_path
+
+
+def process_single_file(parsed) -> int:
+    """Process a single PDF file."""
+    pdf_path = parsed.path
+
+    if not pdf_path.suffix.lower() == '.pdf':
+        print(f"Error: Not a PDF file: {pdf_path}")
+        return 1
+
+    output_path = get_output_path(pdf_path, parsed.suffix)
+
+    # Check if needs OCR
+    if needs_ocr(pdf_path, empty_page_ratio=parsed.empty_ratio):
+        status = "needs OCR"
+    else:
+        status = "already has OCR"
+
+    print(f"File: {pdf_path}")
+    print(f"Status: {status}")
+    print(f"Output: {output_path}")
+
+    if parsed.dry_run:
+        exists = " (already exists)" if output_path.exists() else ""
+        print(f"\n[DRY RUN] Would process: {pdf_path}{exists}")
+        return 0
+
+    # Process the file (even if it has OCR, user explicitly requested this file)
+    print(f"\nProcessing...")
+    result = process_pdf(pdf_path, parsed.suffix, parsed.force, parsed.language)
+
+    if result.skipped:
+        print(f"Skipped: Output already exists. Use --force to reprocess.")
+        return 0
+    elif result.success:
+        print(f"Success: {result.output_path}")
+        return 0
+    else:
+        print(f"Failed: {result.error}")
+        return 1
 
 
 def main(args: list[str] | None = None) -> int:
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
-        description="Scan a directory for PDFs and add OCR to those that need it.",
+        description="Add OCR to PDF files. Accepts a single PDF file or a directory to scan.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
+  pdf-ocr document.pdf
   pdf-ocr "C:\\Documents\\Scanned"
   pdf-ocr /path/to/pdfs --suffix "_searchable"
   pdf-ocr ./documents --dry-run
@@ -25,9 +66,9 @@ Examples:
     )
 
     parser.add_argument(
-        "directory",
+        "path",
         type=Path,
-        help="Directory to scan for PDFs (recursive)"
+        help="PDF file or directory to process"
     )
     parser.add_argument(
         "--suffix",
@@ -58,21 +99,26 @@ Examples:
 
     parsed = parser.parse_args(args)
 
-    # Validate directory
-    if not parsed.directory.exists():
-        print(f"Error: Directory not found: {parsed.directory}")
+    # Validate path exists
+    if not parsed.path.exists():
+        print(f"Error: Path not found: {parsed.path}")
         return 1
 
-    if not parsed.directory.is_dir():
-        print(f"Error: Not a directory: {parsed.directory}")
+    # Handle single file
+    if parsed.path.is_file():
+        return process_single_file(parsed)
+
+    # Handle directory
+    if not parsed.path.is_dir():
+        print(f"Error: Not a file or directory: {parsed.path}")
         return 1
 
-    print(f"Scanning: {parsed.directory}")
+    print(f"Scanning: {parsed.path}")
     print()
 
     # Scan and analyze
     all_pdfs = list(tqdm(
-        scan_directory(parsed.directory),
+        scan_directory(parsed.path),
         desc="Finding PDFs",
         unit="file"
     ))
