@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pdf-ocr"
+version = "0.1.0"
+description = "Scan directories for PDFs and add OCR to scanned documents"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "dobervich"}
+]
+keywords = ["pdf", "ocr", "tesseract", "scan"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Utilities",
+]
+dependencies = [
+    "ocrmypdf>=16.0.0",
+    "pymupdf>=1.24.0",
+    "tqdm>=4.66.0",
+]
+
+[project.scripts]
+pdf-ocr = "pdf_ocr.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/dobervich/pdf-ocr"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["pdf_ocr*"]
